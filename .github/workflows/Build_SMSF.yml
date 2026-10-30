@@ -1,1 +1,45 @@
+name: Build com.dour.smsf
 
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '11'
+
+      # 原项目的签名库是私有的，这里自动生成一个自己的签名
+      - name: Generate keystore
+        run: |
+          mkdir -p keystore
+          keytool -genkeypair -v -keystore keystore/smsf.jks -alias smsf \
+            -keyalg RSA -keysize 2048 -validity 36500 \
+            -storepass smsf123456 -keypass smsf123456 \
+            -dname "CN=dour, OU=smsf, O=dour, L=NA, S=NA, C=CN"
+          cat > keystore/keystore.properties <<PROPS
+          storeFile=../keystore/smsf.jks
+          storePassword=smsf123456
+          keyAlias=smsf
+          keyPassword=smsf123456
+          PROPS
+          sed -i 's/^ *//' keystore/keystore.properties
+
+      - name: Build release APK
+        run: bash ./gradlew assembleRelease
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SmsForwarder-com.dour.smsf
+          path: build/app/outputs/apk/release/*.apk
