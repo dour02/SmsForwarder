@@ -42,4 +42,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: SmsForwarder-com.dour.smsf
-          path: build/app/outputs/apk/release/*.apk
+          path: '**/outputs/apk/**/*.apk'
